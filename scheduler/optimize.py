@@ -1,4 +1,3 @@
-import calendar
 from typing import Iterable, List, Sequence
 
 import cvxpy as cp
@@ -11,39 +10,70 @@ from scheduler.assignments import WorkAssignment, building_requirements_map, bui
     convert_personnel_assignment_matrix_to_list
 
 
-def schedule_simple(buildings: Sequence[Building], employees: Sequence[Person]) -> Iterable[WorkAssignment]:
-    return [WorkAssignment(calendar.MONDAY, buildings[0], employees)]
-
-
 def schedule_cvxpy_separate_for_each_day(buildings: Sequence[Building],
                                          employees: Sequence[Person]) -> Iterable[WorkAssignment]:
     result: List[WorkAssignment] = []
+    print(buildings)
+    print(employees)
     rest_of_buildings = list(buildings)
     for day in workdays_this_week:
+        print(f'{day = }')
         if not rest_of_buildings:
             break
         personnel_count = get_personnal_count_for_day(employees, day)
+        print(f'{personnel_count = }')
         one_day_assignment = cvxpy_schedule_one_day(rest_of_buildings, personnel_count)
+        print(f'{one_day_assignment = }')
         result.extend(convert_personnel_assignment_matrix_to_list(one_day_assignment, day, rest_of_buildings,
                                                                   employees))
         rest_of_buildings = rest_of_buildings[len(one_day_assignment):]
+        print(f'{rest_of_buildings = }')
     return result
 
 
 def cvxpy_schedule_one_day(buildings, employee_count):
-    n_person_type = 3
+    n_building_to_finish_in_one_day = employee_count[0]
+    one_day_assignment = get_daily_optimization_result(buildings[:n_building_to_finish_in_one_day], employee_count)
+    estimated_n_building_too_high = one_day_assignment is None
+    if estimated_n_building_too_high:
+        while one_day_assignment is None:
+            n_building_to_finish_in_one_day -= 1
+            print(f"{n_building_to_finish_in_one_day = }")
+            one_day_assignment = get_daily_optimization_result(buildings[:n_building_to_finish_in_one_day],
+                                                               employee_count)
+    else:
+        new_one_day_assignment = one_day_assignment
+        while new_one_day_assignment is not None and n_building_to_finish_in_one_day <= len(buildings):
+            one_day_assignment = new_one_day_assignment
+            n_building_to_finish_in_one_day += 1
+            print(f"{n_building_to_finish_in_one_day = }")
+            new_one_day_assignment = get_daily_optimization_result(buildings[:n_building_to_finish_in_one_day],
+                                                                   employee_count)
+    return one_day_assignment
+
+
+def get_daily_optimization_result(buildings, employee_count):
     n_building = len(buildings)
+    if n_building == 0:
+        return []
+    n_person_type = 3
     person_building_assignment = cp.Variable((n_building, n_person_type), integer=True)
     total_employee_constraint = cp.sum(person_building_assignment, axis=0) <= np.array(employee_count)
+    nonnegative_constraint = person_building_assignment >= 0
     building_employee_requirements = np.zeros((n_building, 4))
     for i, building in enumerate(buildings):
         building_employee_requirements[i, :] = building_requirements_map[type(building)]
     linear_transformer = np.array(building_requirement_sum_indices).transpose()
     building_requirements_constraint = \
-        person_building_assignment @ linear_transformer == building_employee_requirements
-    optimization_problem = cp.Problem(cp.Maximize(0), [total_employee_constraint, building_requirements_constraint])
-    optimization_problem.solve(verbose=True)
-    assert optimization_problem.status == 'optimal'
+        person_building_assignment @ linear_transformer >= building_employee_requirements
+    optimization_problem = cp.Problem(objective=cp.Minimize(cp.sum(person_building_assignment)),
+                                      constraints=[total_employee_constraint, building_requirements_constraint,
+                                                   nonnegative_constraint])
+    if n_building == 1:
+        print(f'  {employee_count = }')
+        print(f'  {linear_transformer = }')
+        print(f'  {building_employee_requirements = }')
+    optimization_problem.solve(verbose=False)
     return person_building_assignment.value
 
 

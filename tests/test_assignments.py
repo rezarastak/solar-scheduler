@@ -1,11 +1,9 @@
 import calendar
 
 from scheduler import assignments, sites
-from tests.test_personnel import seven_people  # noqa: F401
-from tests.test_sites import six_buildings  # noqa: F401
 
 
-def test_convert_daily_assignment_matrix(seven_people, six_buildings):  # noqa: F811
+def test_convert_daily_assignment_matrix(seven_people, six_buildings):
     work_assignment_matrix = ((1, 0, 0),
                               (1, 1, 0),
                               (1, 0, 0))
