@@ -31,11 +31,11 @@ def is_available(person: Person, day: int) -> bool:
     return day not in person.days_not_available
 
 
-def get_personnal_count_for_day(persons: Iterable[Person], day: int) -> Tuple[int, int, int]:
-    return get_personnal_count(filter(lambda p: is_available(p, day), persons))
+def get_personnel_count_for_day(persons: Iterable[Person], day: int) -> Tuple[int, int, int]:
+    return get_personnel_count(filter(lambda p: is_available(p, day), persons))
 
 
-def get_personnal_count(persons: Iterable[Person]) -> Tuple[int, int, int]:
+def get_personnel_count(persons: Iterable[Person]) -> Tuple[int, int, int]:
     result: Dict = Counter()
     for person in persons:
         result[type(person)] += 1
@@ -58,4 +58,4 @@ def get_a_few_people_from_list(persons: Iterable[Person], count: Tuple[int, int,
 
 
 def get_daily_capacity_matrix(persons: Sequence[Person], days: Sequence[int]):
-    return [get_personnal_count_for_day(persons, day) for day in days]
+    return [get_personnel_count_for_day(persons, day) for day in days]
