@@ -6,8 +6,8 @@ import numpy as np
 from scheduler.workdays import workdays_this_week
 from scheduler.sites import Building
 from scheduler.personnel import Person, get_personnel_count_for_day
-from scheduler.assignments import WorkAssignment, building_requirements_map, building_requirement_sum_indices, \
-    convert_personnel_assignment_matrix_to_list
+from scheduler.assignments import WorkAssignment, building_requirement_sum_indices, \
+    convert_personnel_assignment_matrix_to_list, calculate_building_requirement_matrix
 
 
 def schedule_cvxpy_separate_for_each_day(buildings: Sequence[Building],
@@ -52,9 +52,7 @@ def get_daily_optimization_result(buildings: Sequence[Building], employee_count:
     person_building_assignment = cp.Variable((n_building, n_person_type), integer=True)
     total_employee_constraint = cp.sum(person_building_assignment, axis=0) <= np.array(employee_count)
     nonnegative_constraint = person_building_assignment >= 0
-    building_employee_requirements = np.zeros((n_building, 4))
-    for i, building in enumerate(buildings):
-        building_employee_requirements[i, :] = building_requirements_map[type(building)]
+    building_employee_requirements = np.array(calculate_building_requirement_matrix(buildings))
     linear_transformer = np.array(building_requirement_sum_indices).transpose()
     building_requirements_constraint = \
         person_building_assignment @ linear_transformer >= building_employee_requirements

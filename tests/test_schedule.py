@@ -25,10 +25,10 @@ def test_multiple_buildings_multiple_people(six_buildings, ten_people):
     assert job_assignments[0].workers[0].name == 'Tram'
     assert job_assignments[1].day == calendar.MONDAY
     assert job_assignments[2].building.name == '198 Gordon Way'
-    assert job_assignments[3].day == calendar.TUESDAY
-    assert job_assignments[4].day == calendar.TUESDAY
-    assert job_assignments[4].workers[0].name == 'Matt'
-    assert job_assignments[5].day == calendar.WEDNESDAY
+    assert job_assignments[3].day == calendar.WEDNESDAY
+    assert job_assignments[4].day == calendar.THURSDAY
+    assert job_assignments[4].workers[0].name == 'Tram'
+    assert job_assignments[5].day == calendar.THURSDAY
     assert job_assignments[5].workers[0].name == 'Roy'
 
 
